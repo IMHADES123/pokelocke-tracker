@@ -66,7 +66,7 @@ exports.deleteLocke = async (req, res) => {
 exports.addChampion = async (req, res) => {
   const {
     nickname, species, gender, image_url, type1_id, type2_id,
-    ability, ability_description, nature_id, summary,
+    ability, ability_description, nature_id, summary, shiny,
   } = req.body;
   if (!nickname || !species || !type1_id)
     return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
@@ -74,10 +74,10 @@ exports.addChampion = async (req, res) => {
   const { rows } = await pool.query(
     `INSERT INTO champions
      (locke_id, nickname, species, gender, image_url, type1_id, type2_id,
-      ability, ability_description, nature_id, summary)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      ability, ability_description, nature_id, summary, shiny)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
     [req.params.id, nickname, species, gender, image_url, type1_id, type2_id || null,
-     ability, ability_description, nature_id, summary]
+     ability, ability_description, nature_id, summary, !!shiny]
   );
   res.status(201).json(rows[0]);
 };
@@ -102,7 +102,7 @@ exports.updateLocke = async (req, res) => {
 exports.updateChampion = async (req, res) => {
   const {
     nickname, species, gender, image_url, type1_id, type2_id,
-    ability, ability_description, nature_id, summary,
+    ability, ability_description, nature_id, summary, shiny,
   } = req.body;
   if (!nickname || !species || !type1_id)
     return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
@@ -110,10 +110,10 @@ exports.updateChampion = async (req, res) => {
   const { rows } = await pool.query(
     `UPDATE champions
      SET nickname=$1, species=$2, gender=$3, image_url=$4, type1_id=$5, type2_id=$6,
-         ability=$7, ability_description=$8, nature_id=$9, summary=$10
-     WHERE id=$11 AND locke_id=$12 RETURNING *`,
+         ability=$7, ability_description=$8, nature_id=$9, summary=$10, shiny=$11
+     WHERE id=$12 AND locke_id=$13 RETURNING *`,
     [nickname, species, gender, image_url, type1_id, type2_id || null,
-     ability, ability_description, nature_id || null, summary,
+     ability, ability_description, nature_id || null, summary, !!shiny,
      req.params.championId, req.params.id]
   );
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' });

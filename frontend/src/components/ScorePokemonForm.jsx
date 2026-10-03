@@ -12,6 +12,7 @@ export default function ScorePokemonForm({ initial, pokemonTypes, onSave, onCanc
     kills: initial?.kills ?? 0,
     assists: initial?.assists ?? 0,
     mvps: initial?.mvps ?? 0,
+    shiny: initial?.shiny || false,
   });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ export default function ScorePokemonForm({ initial, pokemonTypes, onSave, onCanc
       const info = await fetchPokemonInfo(f.species);
       setF((p) => ({
         ...p,
-        image_url: info.image || p.image_url,
+        image_url: (p.shiny ? info.shinyImage : info.image) || p.image_url,
         type1_id: typeId(info.types[0]),
         type2_id: info.types[1] ? typeId(info.types[1]) : '',
       }));
@@ -37,6 +38,21 @@ export default function ScorePokemonForm({ initial, pokemonTypes, onSave, onCanc
       setMsg(`⚠ ${e.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleShiny = async (e) => {
+    const shiny = e.target.checked;
+    setF((p) => ({ ...p, shiny }));
+    if (!f.species.trim()) return;
+    try {
+      const info = await fetchPokemonInfo(f.species);
+      setF((p) => ({
+        ...p,
+        image_url: (shiny ? info.shinyImage : info.image) || p.image_url,
+      }));
+    } catch {
+      /* se queda con la imagen actual */
     }
   };
 
@@ -89,6 +105,11 @@ export default function ScorePokemonForm({ initial, pokemonTypes, onSave, onCanc
           </select>
         </label>
       </div>
+
+      <label className="check">
+        <input type="checkbox" checked={f.shiny} onChange={toggleShiny} />
+        ✨ Es shiny
+      </label>
 
       <label>URL de la imagen
         <input value={f.image_url} onChange={set('image_url')} placeholder="https://..." />

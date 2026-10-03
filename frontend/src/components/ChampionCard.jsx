@@ -21,6 +21,7 @@ export default function ChampionCard({ champion: c }) {
         <h3>
           {c.nickname}{' '}
           {gender && <span style={{ color: gender.color }}>{gender.symbol}</span>}
+          {c.shiny && <span title="Shiny"> ✨</span>}
         </h3>
         <p className="muted">{c.species}</p>
 

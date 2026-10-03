@@ -63,33 +63,32 @@ exports.deleteLog = async (req, res) => {
 
 // ---------- Pokémon de la bitácora ----------
 exports.addPokemon = async (req, res) => {
-  const { nickname, species, gender, image_url, type1_id, type2_id } = req.body;
+  const { nickname, species, gender, image_url, type1_id, type2_id, shiny } = req.body;
   if (!nickname || !species)
     return res.status(400).json({ error: 'nickname y species son requeridos' });
   const { rows } = await pool.query(
-    `INSERT INTO score_pokemon (log_id, nickname, species, gender, image_url, type1_id, type2_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [req.params.id, nickname, species, gender, image_url, type1_id || null, type2_id || null]
+    `INSERT INTO score_pokemon (log_id, nickname, species, gender, image_url, type1_id, type2_id, shiny)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [req.params.id, nickname, species, gender, image_url, type1_id || null, type2_id || null, !!shiny]
   );
   res.status(201).json(rows[0]);
 };
 
 exports.updatePokemon = async (req, res) => {
-  const { nickname, species, gender, image_url, type1_id, type2_id, kills, assists, mvps } = req.body;
+  const { nickname, species, gender, image_url, type1_id, type2_id, kills, assists, mvps, shiny } = req.body;
   if (!nickname || !species)
     return res.status(400).json({ error: 'nickname y species son requeridos' });
   const { rows } = await pool.query(
     `UPDATE score_pokemon
      SET nickname=$1, species=$2, gender=$3, image_url=$4, type1_id=$5, type2_id=$6,
-         kills=GREATEST(0,$7), assists=GREATEST(0,$8), mvps=GREATEST(0,$9)
-     WHERE id=$10 RETURNING *, ${SCORE_SQL}`,
+         kills=GREATEST(0,$7), assists=GREATEST(0,$8), mvps=GREATEST(0,$9), shiny=$10
+     WHERE id=$11 RETURNING *, ${SCORE_SQL}`,
     [nickname, species, gender, image_url, type1_id || null, type2_id || null,
-     kills || 0, assists || 0, mvps || 0, req.params.pid]
+     kills || 0, assists || 0, mvps || 0, !!shiny, req.params.pid]
   );
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
   res.json(rows[0]);
 };
-
 // Sumar o restar 1 a kills / assists / mvps
 exports.changeStat = async (req, res) => {
   const { field, delta } = req.body;
@@ -121,4 +120,16 @@ exports.setDead = async (req, res) => {
 exports.deletePokemon = async (req, res) => {
   await pool.query('DELETE FROM score_pokemon WHERE id = $1', [req.params.pid]);
   res.status(204).end();
+};
+exports.evolvePokemon = async (req, res) => {
+  const { species, image_url, type1_id, type2_id } = req.body;
+  if (!species) return res.status(400).json({ error: 'species requerida' });
+  const { rows } = await pool.query(
+    `UPDATE score_pokemon
+     SET species=$1, image_url=$2, type1_id=$3, type2_id=$4
+     WHERE id=$5 RETURNING *, ${SCORE_SQL}`,
+    [species, image_url || null, type1_id || null, type2_id || null, req.params.pid]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+  res.json(rows[0]);
 };

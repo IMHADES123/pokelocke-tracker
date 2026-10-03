@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import ScoreCard from '../components/ScoreCard';
 import ScoreLogForm from '../components/ScoreLogForm';
 import ScorePokemonForm from '../components/ScorePokemonForm';
+import EvolveForm from '../components/EvolveForm';
 
 const MAX_LOGS = 5;
 
@@ -15,6 +16,7 @@ export default function Bitacoras() {
   const [openLog, setOpenLog] = useState(null);
   const [logModal, setLogModal] = useState(false);
   const [pokeModal, setPokeModal] = useState(null); // { data: null | pokemon }
+  const [evolveModal, setEvolveModal] = useState(null); // pokemon
   const [error, setError] = useState('');
 
   const fail = (e) => setError(e.message);
@@ -31,8 +33,9 @@ export default function Bitacoras() {
     api.getPokemonTypes().then(setPokemonTypes).catch(fail);
   }, []);
 
-  // Cuántas bitácoras cuentan para el límite (lockes en curso)
-  const activeCount = logs.filter((l) => l.locke_status === 'en_curso').length;
+  // Bitácoras de lockes en curso (cuentan para el límite)
+  const activeLogs = logs.filter((l) => l.locke_status === 'en_curso');
+  const activeCount = activeLogs.length;
 
   const toggle = (id) => {
     if (openLog?.id === id) setOpenLog(null);
@@ -84,6 +87,15 @@ export default function Bitacoras() {
     } catch (e) { fail(e); }
   };
 
+  const saveEvolution = async (data) => {
+    try {
+      await api.evolveScorePokemon(evolveModal.id, data);
+      setEvolveModal(null);
+      await loadLog(openLog.id); // recarga para traer también los tipos con su color
+      loadLogs();
+    } catch (e) { fail(e); }
+  };
+
   const removePokemon = async () => {
     const p = pokeModal.data;
     if (!window.confirm(`¿Eliminar a ${p.nickname} definitivamente?`)) return;
@@ -118,11 +130,13 @@ export default function Bitacoras() {
         {error && <p className="error" style={{ padding: 0 }}>⚠ {error}</p>}
 
         <div className="admin-list">
-          {logs.length === 0 && (
-            <p className="muted">Aún no tienes bitácoras. Crea la primera.</p>
+          {activeLogs.length === 0 && (
+            <p className="muted">
+              No tienes bitácoras en curso. Crea una nueva o revisa el Historial.
+            </p>
           )}
 
-          {logs.map((l) => {
+          {activeLogs.map((l) => {
             const isOpen = openLog?.id === l.id;
             return (
               <div key={l.id} className={`admin-block ${isOpen ? 'selected' : ''}`}>
@@ -130,8 +144,7 @@ export default function Bitacoras() {
                   <div>
                     <strong>{l.name}</strong>
                     <p className="muted">
-                      Locke: {l.locke_name} ·{' '}
-                      {l.locke_status === 'en_curso' ? 'En curso' : 'Finalizado'} ·{' '}
+                      Locke: {l.locke_name} · En curso ·{' '}
                       {l.total - l.dead} vivos · {l.dead} muertos
                     </p>
                   </div>
@@ -156,8 +169,14 @@ export default function Bitacoras() {
                     {alive.length === 0 && <p className="muted">No hay Pokémon vivos.</p>}
                     <div className="grid">
                       {alive.map((p) => (
-                        <ScoreCard key={p.id} p={p} onStat={changeStat}
-                          onEdit={(x) => setPokeModal({ data: x })} onDead={setDead} />
+                        <ScoreCard
+                          key={p.id}
+                          p={p}
+                          onStat={changeStat}
+                          onEdit={(x) => setPokeModal({ data: x })}
+                          onEvolve={setEvolveModal}
+                          onDead={setDead}
+                        />
                       ))}
                     </div>
 
@@ -165,8 +184,14 @@ export default function Bitacoras() {
                     {dead.length === 0 && <p className="muted">Nadie ha muerto todavía.</p>}
                     <div className="grid">
                       {dead.map((p) => (
-                        <ScoreCard key={p.id} p={p} onStat={changeStat}
-                          onEdit={(x) => setPokeModal({ data: x })} onDead={setDead} />
+                        <ScoreCard
+                          key={p.id}
+                          p={p}
+                          onStat={changeStat}
+                          onEdit={(x) => setPokeModal({ data: x })}
+                          onEvolve={setEvolveModal}
+                          onDead={setDead}
+                        />
                       ))}
                     </div>
                   </div>
@@ -194,6 +219,17 @@ export default function Bitacoras() {
             onSave={savePokemon}
             onCancel={() => setPokeModal(null)}
             onDelete={pokeModal.data ? removePokemon : null}
+          />
+        </Modal>
+      )}
+
+      {evolveModal && (
+        <Modal title="Evolucionar" onClose={() => setEvolveModal(null)}>
+          <EvolveForm
+            pokemon={evolveModal}
+            pokemonTypes={pokemonTypes}
+            onSave={saveEvolution}
+            onCancel={() => setEvolveModal(null)}
           />
         </Modal>
       )}

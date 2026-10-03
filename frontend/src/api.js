@@ -51,3 +51,10 @@ export const setScoreDead = (id, is_dead) =>
   request(`/scores/pokemon/${id}/dead`, json('PATCH', { is_dead }));
 export const deleteScorePokemon = (id) =>
   request(`/scores/pokemon/${id}`, { method: 'DELETE' });
+export const getLegends = () => request('/legends');
+export const getLegendSources = () => request('/legends/sources');
+export const createLegend = (data) => request('/legends', json('POST', data));
+export const updateLegend = (id, data) => request(`/legends/${id}`, json('PUT', data));
+export const deleteLegend = (id) => request(`/legends/${id}`, { method: 'DELETE' });
+export const evolveScorePokemon = (id, data) =>
+  request(`/scores/pokemon/${id}/evolve`, json('PATCH', data));

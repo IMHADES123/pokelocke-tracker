@@ -270,3 +270,12 @@ a.btn-add { text-decoration: none; display: inline-block; }
   padding: 8px 14px; border-radius: 8px; font-size: 14px;
 }
 .btn-revive:hover { background: #22c55e18; }
+.form label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
+.form label.check input { width: 18px; height: 18px; }
+.legend-card .card-image { position: relative; }
+.legend-rank {
+  position: absolute; top: 12px; left: 14px; z-index: 1;
+  font-weight: 700; color: #eab308; font-size: 18px;
+}
+.legend-note { font-size: 12px; margin-top: 4px; }
+.score-actions { flex-wrap: wrap; }

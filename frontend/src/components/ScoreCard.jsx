@@ -11,7 +11,7 @@ const STATS = [
   { key: 'mvps', label: 'MVP', pts: '×3' },
 ];
 
-export default function ScoreCard({ p, onStat, onEdit, onDead }) {
+export default function ScoreCard({ p, onStat, onEdit, onDead, onEvolve, readOnly }) {
   const gender = GENDER[p.gender];
 
   return (
@@ -24,6 +24,7 @@ export default function ScoreCard({ p, onStat, onEdit, onDead }) {
         <h3>
           {p.nickname}{' '}
           {gender && <span style={{ color: gender.color }}>{gender.symbol}</span>}
+          {p.shiny && <span title="Shiny"> ✨</span>}
         </h3>
         <p className="muted">{p.species}</p>
 
@@ -39,13 +40,13 @@ export default function ScoreCard({ p, onStat, onEdit, onDead }) {
               <div className="counter-box">
                 <button
                   className="counter-btn"
-                  disabled={p.is_dead || p[s.key] === 0}
+                  disabled={readOnly || p.is_dead || p[s.key] === 0}
                   onClick={() => onStat(p, s.key, -1)}
                 >−</button>
                 <strong>{p[s.key]}</strong>
                 <button
                   className="counter-btn plus"
-                  disabled={p.is_dead}
+                  disabled={readOnly || p.is_dead}
                   onClick={() => onStat(p, s.key, 1)}
                 >+</button>
               </div>
@@ -58,14 +59,19 @@ export default function ScoreCard({ p, onStat, onEdit, onDead }) {
           <strong>{Number(p.score)}</strong>
         </div>
 
-        <div className="score-actions">
-          <button className="btn-ghost" onClick={() => onEdit(p)}>Editar ficha</button>
-          {p.is_dead ? (
-            <button className="btn-revive" onClick={() => onDead(p, false)}>Revivir</button>
-          ) : (
-            <button className="btn-danger" onClick={() => onDead(p, true)}>Murió</button>
-          )}
-        </div>
+        {!readOnly && (
+          <div className="score-actions">
+            <button className="btn-ghost" onClick={() => onEdit(p)}>Editar ficha</button>
+            <button className="btn-ghost" onClick={() => onEvolve(p)} disabled={p.is_dead}>
+  Evolución
+</button>
+            {p.is_dead ? (
+              <button className="btn-revive" onClick={() => onDead(p, false)}>Revivir</button>
+            ) : (
+              <button className="btn-danger" onClick={() => onDead(p, true)}>Murió</button>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );

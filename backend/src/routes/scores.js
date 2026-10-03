@@ -11,5 +11,6 @@ router.put('/pokemon/:pid', c.updatePokemon);
 router.patch('/pokemon/:pid/stat', c.changeStat);
 router.patch('/pokemon/:pid/dead', c.setDead);
 router.delete('/pokemon/:pid', c.deletePokemon);
+router.patch('/pokemon/:pid/evolve', c.evolvePokemon);
 
 module.exports = router;

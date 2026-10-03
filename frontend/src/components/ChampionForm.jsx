@@ -13,6 +13,7 @@ export default function ChampionForm({ initial, pokemonTypes, natures, onSave, o
     ability_description: initial?.ability_description || '',
     nature_id: initial?.nature_id || '',
     summary: initial?.summary || '',
+    shiny: initial?.shiny || false,
   });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export default function ChampionForm({ initial, pokemonTypes, natures, onSave, o
       const info = await fetchPokemonInfo(f.species);
       setF((p) => ({
         ...p,
-        image_url: info.image || p.image_url,
+        image_url: (p.shiny ? info.shinyImage : info.image) || p.image_url,
         type1_id: typeId(info.types[0]),
         type2_id: info.types[1] ? typeId(info.types[1]) : '',
         ability: info.ability,
@@ -40,6 +41,21 @@ export default function ChampionForm({ initial, pokemonTypes, natures, onSave, o
       setMsg(`⚠ ${e.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleShiny = async (e) => {
+    const shiny = e.target.checked;
+    setF((p) => ({ ...p, shiny }));
+    if (!f.species.trim()) return;
+    try {
+      const info = await fetchPokemonInfo(f.species);
+      setF((p) => ({
+        ...p,
+        image_url: (shiny ? info.shinyImage : info.image) || p.image_url,
+      }));
+    } catch {
+      /* se queda con la imagen actual */
     }
   };
 
@@ -103,6 +119,11 @@ export default function ChampionForm({ initial, pokemonTypes, natures, onSave, o
           </select>
         </label>
       </div>
+
+      <label className="check">
+        <input type="checkbox" checked={f.shiny} onChange={toggleShiny} />
+        ✨ Es shiny
+      </label>
 
       <label>URL de la imagen
         <input value={f.image_url} onChange={set('image_url')} placeholder="https://..." />
