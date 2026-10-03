@@ -17,7 +17,7 @@ export default function ScoreCard({ p, onStat, onEdit, onDead, onEvolve, readOnl
   return (
     <article className={`card score-card ${p.is_dead ? 'dead' : ''}`}>
       <div className="card-image score-image">
-        {p.image_url && <img src={c.image_url} alt={c.species} loading="lazy" />}
+        {p.image_url && <img src={p.image_url} alt={p.species} loading="lazy" />}
       </div>
 
       <div className="card-body">
@@ -63,8 +63,8 @@ export default function ScoreCard({ p, onStat, onEdit, onDead, onEvolve, readOnl
           <div className="score-actions">
             <button className="btn-ghost" onClick={() => onEdit(p)}>Editar ficha</button>
             <button className="btn-ghost" onClick={() => onEvolve(p)} disabled={p.is_dead}>
-  Evolución
-</button>
+              Evolución
+            </button>
             {p.is_dead ? (
               <button className="btn-revive" onClick={() => onDead(p, false)}>Revivir</button>
             ) : (
