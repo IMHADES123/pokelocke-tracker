@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import * as api from '../api';
 import Navbar from '../components/Navbar';
 import ScoreCard from '../components/ScoreCard';
+import PokemonList from '../components/PokemonList';
 
 const noop = () => {};
 
@@ -20,9 +21,6 @@ export default function Historial() {
     if (openLog?.id === id) return setOpenLog(null);
     api.getScoreLog(id).then(setOpenLog).catch((e) => setError(e.message));
   };
-
-  const ranking = (log) =>
-    [...log.pokemon].sort((a, b) => b.score - a.score);
 
   return (
     <>
@@ -61,12 +59,21 @@ export default function Historial() {
 
                 {isOpen && (
                   <div className="admin-panel">
-                    <div className="grid">
-                      {ranking(openLog).map((p) => (
-                        <ScoreCard key={p.id} p={p} readOnly
-                          onStat={noop} onEdit={noop} onDead={noop} />
-                      ))}
-                    </div>
+                    <PokemonList
+                      items={openLog.pokemon}
+                      empty="Esta bitácora no tiene Pokémon."
+                      render={(p) => (
+                        <ScoreCard
+                          key={p.id}
+                          p={p}
+                          readOnly
+                          onStat={noop}
+                          onEdit={noop}
+                          onDead={noop}
+                          onEvolve={noop}
+                        />
+                      )}
+                    />
                   </div>
                 )}
               </div>

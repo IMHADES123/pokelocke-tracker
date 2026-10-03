@@ -133,7 +133,7 @@ export default function Administrar() {
                     {selected.champions.map((c) => (
                       <div key={c.id} className="admin-item">
                         <div className="admin-champ">
-                          {c.image_url && <img src={c.image_url} alt={c.species} />}
+                          {c.image_url && <img src={c.image_url} alt={c.species} loading="lazy" />}
                           <div>
                             <strong>{c.nickname}</strong>
                             <p className="muted">{c.species}</p>

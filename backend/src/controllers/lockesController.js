@@ -119,3 +119,34 @@ exports.updateChampion = async (req, res) => {
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
   res.json(rows[0]);
 };
+// Todos los lockes (opcionalmente de un tipo) con sus campeones, en 2 consultas
+exports.getLockesFull = async (req, res) => {
+  const typeId = req.query.type_id ? Number(req.query.type_id) : null;
+
+  const lockes = await pool.query(`
+    SELECT l.*, lt.name AS locke_type
+    FROM lockes l
+    LEFT JOIN locke_types lt ON lt.id = l.locke_type_id
+    WHERE ($1::int IS NULL OR l.locke_type_id = $1)
+    ORDER BY l.created_at DESC`, [typeId]);
+
+  const ids = lockes.rows.map((l) => l.id);
+  if (!ids.length) return res.json([]);
+
+  const champs = await pool.query(`
+    SELECT c.*,
+           t1.name AS type1, t1.color AS type1_color,
+           t2.name AS type2, t2.color AS type2_color,
+           n.name AS nature, n.increased_stat, n.decreased_stat
+    FROM champions c
+    JOIN pokemon_types t1 ON t1.id = c.type1_id
+    LEFT JOIN pokemon_types t2 ON t2.id = c.type2_id
+    LEFT JOIN natures n ON n.id = c.nature_id
+    WHERE c.locke_id = ANY($1::int[])
+    ORDER BY c.id`, [ids]);
+
+  res.json(lockes.rows.map((l) => ({
+    ...l,
+    champions: champs.rows.filter((c) => c.locke_id === l.id),
+  })));
+};

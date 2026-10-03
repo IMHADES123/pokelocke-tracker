@@ -3,8 +3,17 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: process.env.FRONTEND_URL || true }));
 app.use(express.json());
+
+// Clave de acceso compartida
+const requireKey = (req, res, next) => {
+  if (!process.env.ACCESS_KEY) return next(); // sin clave = modo local
+  if (req.headers['x-access-key'] !== process.env.ACCESS_KEY)
+    return res.status(401).json({ error: 'Clave incorrecta' });
+  next();
+};
+app.use('/api', requireKey);
 
 app.use('/api/catalogs', require('./routes/catalogs'));
 app.use('/api/lockes', require('./routes/lockes'));

@@ -3,6 +3,7 @@ const c = require('../controllers/lockesController');
 
 router.get('/', c.getLockes);
 router.post('/', c.createLocke);
+router.get('/full', c.getLockesFull);
 router.get('/:id', c.getLockeById);
 router.patch('/:id/status', c.updateStatus);
 router.delete('/:id', c.deleteLocke);

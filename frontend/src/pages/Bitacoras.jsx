@@ -6,6 +6,7 @@ import ScoreCard from '../components/ScoreCard';
 import ScoreLogForm from '../components/ScoreLogForm';
 import ScorePokemonForm from '../components/ScorePokemonForm';
 import EvolveForm from '../components/EvolveForm';
+import PokemonList from '../components/PokemonList';
 
 const MAX_LOGS = 5;
 
@@ -69,8 +70,17 @@ export default function Bitacoras() {
       pokemon: log.pokemon.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
     }));
 
-  const changeStat = (p, field, delta) =>
-    api.changeScoreStat(p.id, field, delta).then(merge).catch(fail);
+  // Actualización optimista: se ve al instante y se confirma con el servidor
+  const changeStat = (p, field, delta) => {
+    const vals = { kills: p.kills, assists: p.assists, mvps: p.mvps };
+    vals[field] = Math.max(0, vals[field] + delta);
+    const score = vals.kills + vals.assists * 0.5 + vals.mvps * 3;
+
+    merge({ id: p.id, ...vals, score });
+    api.changeScoreStat(p.id, field, delta)
+      .then(merge)
+      .catch((e) => { merge(p); fail(e); });
+  };
 
   const setDead = (p, dead) => {
     if (dead && !window.confirm(`¿Confirmas que ${p.nickname} murió?`)) return;
@@ -109,6 +119,17 @@ export default function Bitacoras() {
 
   const alive = openLog?.pokemon.filter((p) => !p.is_dead) || [];
   const dead = openLog?.pokemon.filter((p) => p.is_dead) || [];
+
+  const renderCard = (p) => (
+    <ScoreCard
+      key={p.id}
+      p={p}
+      onStat={changeStat}
+      onEdit={(x) => setPokeModal({ data: x })}
+      onEvolve={setEvolveModal}
+      onDead={setDead}
+    />
+  );
 
   return (
     <>
@@ -166,34 +187,18 @@ export default function Bitacoras() {
                     </div>
 
                     <h4 className="score-section">Vivos ({alive.length})</h4>
-                    {alive.length === 0 && <p className="muted">No hay Pokémon vivos.</p>}
-                    <div className="grid">
-                      {alive.map((p) => (
-                        <ScoreCard
-                          key={p.id}
-                          p={p}
-                          onStat={changeStat}
-                          onEdit={(x) => setPokeModal({ data: x })}
-                          onEvolve={setEvolveModal}
-                          onDead={setDead}
-                        />
-                      ))}
-                    </div>
+                    <PokemonList
+                      items={alive}
+                      empty="No hay Pokémon vivos."
+                      render={renderCard}
+                    />
 
                     <h4 className="score-section">💀 Muertos ({dead.length})</h4>
-                    {dead.length === 0 && <p className="muted">Nadie ha muerto todavía.</p>}
-                    <div className="grid">
-                      {dead.map((p) => (
-                        <ScoreCard
-                          key={p.id}
-                          p={p}
-                          onStat={changeStat}
-                          onEdit={(x) => setPokeModal({ data: x })}
-                          onEvolve={setEvolveModal}
-                          onDead={setDead}
-                        />
-                      ))}
-                    </div>
+                    <PokemonList
+                      items={dead}
+                      empty="Nadie ha muerto todavía."
+                      render={renderCard}
+                    />
                   </div>
                 )}
               </div>

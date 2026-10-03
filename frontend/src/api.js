@@ -1,10 +1,18 @@
 const API = import.meta.env.VITE_API_URL;
 
+export const getKey = () => localStorage.getItem('access_key') || '';
+export const setKey = (k) => localStorage.setItem('access_key', k);
+
 async function request(path, options = {}) {
   const res = await fetch(`${API}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-access-key': getKey() },
     ...options,
   });
+  if (res.status === 401) {
+    localStorage.removeItem('access_key');
+    window.location.reload();
+    throw new Error('Clave incorrecta');
+  }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `Error ${res.status}`);
@@ -28,6 +36,8 @@ export const getLocke = (id) => request(`/lockes/${id}`);
 export const createLocke = (data) => request('/lockes', json('POST', data));
 export const updateLocke = (id, data) => request(`/lockes/${id}`, json('PUT', data));
 export const deleteLocke = (id) => request(`/lockes/${id}`, { method: 'DELETE' });
+export const getLockesFull = (typeId) =>
+  request(`/lockes/full${typeId ? `?type_id=${typeId}` : ''}`);
 
 // Campeones
 export const addChampion = (lockeId, data) =>

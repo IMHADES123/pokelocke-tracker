@@ -279,3 +279,11 @@ a.btn-add { text-decoration: none; display: inline-block; }
 }
 .legend-note { font-size: 12px; margin-top: 4px; }
 .score-actions { flex-wrap: wrap; }
+.list-toolbar { display: flex; gap: 10px; margin: 8px 0 14px; flex-wrap: wrap; }
+.list-toolbar input, .list-toolbar select {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px; font-family: inherit; font-size: 14px;
+}
+.list-toolbar input { flex: 1; min-width: 200px; }
+.list-toolbar input:focus, .list-toolbar select:focus { outline: none; border-color: var(--red); }
+.list-more { display: block; margin: 16px auto 0; }

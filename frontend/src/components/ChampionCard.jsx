@@ -14,7 +14,7 @@ export default function ChampionCard({ champion: c }) {
   return (
     <article className="card">
       <div className="card-image">
-        {c.image_url && <img src={c.image_url} alt={c.species} />}
+        {c.image_url && <img src={c.image_url} alt={c.species} loading="lazy" />}
       </div>
 
       <div className="card-body">

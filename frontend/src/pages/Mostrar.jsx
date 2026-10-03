@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLockeTypes, getLockes, getLocke, createLockeType } from '../api';
+import { getLockeTypes, getLockesFull, createLockeType } from '../api';
 import Navbar from '../components/Navbar';
 import LockeHeader from '../components/LockeHeader';
 import ChampionCard from '../components/ChampionCard';
@@ -40,15 +40,11 @@ export default function Mostrar() {
       .catch((e) => setError(e.message));
   }, []);
 
+  // Un solo endpoint devuelve todos los lockes del tipo con sus campeones
   useEffect(() => {
     if (!activeTypeId) return;
     let cancelled = false;
-    getLockes()
-      .then((list) =>
-        Promise.all(
-          list.filter((l) => l.locke_type_id === activeTypeId).map((l) => getLocke(l.id))
-        )
-      )
+    getLockesFull(activeTypeId)
       .then((full) => { if (!cancelled) setLockes(full); })
       .catch((e) => setError(e.message));
     return () => { cancelled = true; };

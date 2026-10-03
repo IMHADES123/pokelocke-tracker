@@ -17,7 +17,7 @@ export default function ScoreCard({ p, onStat, onEdit, onDead, onEvolve, readOnl
   return (
     <article className={`card score-card ${p.is_dead ? 'dead' : ''}`}>
       <div className="card-image score-image">
-        {p.image_url && <img src={p.image_url} alt={p.species} />}
+        {c.image_url && <img src={c.image_url} alt={c.species} loading="lazy" />}
       </div>
 
       <div className="card-body">
