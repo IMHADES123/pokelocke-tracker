@@ -23,9 +23,15 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
         <h3>
           {l.nickname}{' '}
           {g && <span style={{ color: g.color }}>{g.symbol}</span>}
-          {l.shiny && <span title="Shiny"> ✨</span>}
+          {l.shiny && (
+            <span title={`Shiny en ${l.shiny_count} locke(s)`}>
+              {' '}✨{l.shiny_count > 1 ? `×${l.shiny_count}` : ''}
+            </span>
+          )}
         </h3>
-        <p className="muted">{l.species.length ? l.species.join(' · ') : 'Sin registros todavía'}</p>
+        <p className="muted">
+          {l.species.length ? l.species.join(' · ') : 'Sin registros todavía'}
+        </p>
 
         <div className="score-stats">
           <div className="score-row">
@@ -33,7 +39,7 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
             <strong>+{l.score_points}</strong>
           </div>
           <div className="score-row">
-            <span className="muted">Shiny</span>
+            <span className="muted">Shiny ({l.shiny_count}×)</span>
             <strong>+{l.shiny_points}</strong>
           </div>
           <div className="score-row">
@@ -60,7 +66,9 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
             <p><strong>Bitácoras ({l.runs.length})</strong></p>
             {l.runs.length === 0 && <p className="muted">Ninguna.</p>}
             {l.runs.map((r) => (
-              <p key={r.id} className="muted">{r.log_name} · {r.species}: {r.score} pts</p>
+              <p key={r.id} className="muted">
+                {r.log_name} · {r.species}: {r.score} pts{r.shiny ? ' ✨' : ''}
+              </p>
             ))}
             <p style={{ marginTop: 8 }}><strong>Halls de la fama ({l.halls.length})</strong></p>
             {l.halls.length === 0 && <p className="muted">Ninguno.</p>}
@@ -68,6 +76,7 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
               <p key={h.id} className="muted">
                 {h.locke_name} · {h.species} · puesto {h.pos} ·{' '}
                 {h.locke_status === 'ganado' ? `+${h.points}` : 'locke sin ganar (+0)'}
+                {h.shiny ? ' ✨' : ''}
               </p>
             ))}
           </div>

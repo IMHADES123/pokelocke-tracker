@@ -8,11 +8,11 @@ exports.getLegends = async (req, res) => {
     pool.query(`
       SELECT p.id, p.nickname, p.species, p.gender, p.image_url, p.shiny,
              (p.kills + p.assists * 0.5 + p.mvps * 3)::float AS score,
-             s.name AS log_name
+             s.name AS log_name, s.locke_id
       FROM score_pokemon p JOIN score_logs s ON s.id = p.log_id
       ORDER BY p.id`),
     pool.query(`
-      SELECT c.id, c.nickname, c.species, c.gender, c.image_url, c.shiny,
+      SELECT c.id, c.nickname, c.species, c.gender, c.image_url, c.shiny, c.locke_id,
              l.name AS locke_name, l.status AS locke_status,
              ROW_NUMBER() OVER (PARTITION BY c.locke_id ORDER BY c.id)::int AS pos
       FROM champions c JOIN lockes l ON l.id = c.locke_id
@@ -31,8 +31,15 @@ exports.getLegends = async (req, res) => {
 
     const total_score = runs.reduce((a, r) => a + r.score, 0);
     const score_points = Math.floor(total_score / 100);
-    const shiny = [...runs, ...halls].some((x) => x.shiny);
-    const shiny_points = shiny ? 2 : 0;
+
+    // +2 por cada locke distinto donde apareció shiny
+    const shinyLockes = new Set(
+      [...runs, ...halls].filter((x) => x.shiny).map((x) => x.locke_id)
+    );
+    const shiny_count = shinyLockes.size;
+    const shiny = shiny_count > 0;
+    const shiny_points = shiny_count * 2;
+
     const win_points = halls.reduce((a, h) => a + h.points, 0);
     const extra = Number(g.extra_points) || 0;
     const latest = runs[runs.length - 1] || halls[halls.length - 1];
@@ -44,8 +51,13 @@ exports.getLegends = async (req, res) => {
       gender: g.gender || latest?.gender || null,
       species: [...new Set([...runs, ...halls].map((x) => x.species))],
       shiny,
-      runs, halls,
-      total_score, score_points, shiny_points, win_points,
+      shiny_count,
+      runs,
+      halls,
+      total_score,
+      score_points,
+      shiny_points,
+      win_points,
       total: score_points + shiny_points + win_points + extra,
     };
   });
@@ -64,8 +76,11 @@ exports.getSources = async (req, res) => {
 };
 
 const values = (b) => [
-  b.nickname.trim(), b.gender || null, b.image_url || null,
-  Number(b.extra_points) || 0, b.extra_notes || null,
+  b.nickname.trim(),
+  b.gender || null,
+  b.image_url || null,
+  Number(b.extra_points) || 0,
+  b.extra_notes || null,
 ];
 
 const dupError = (res, err) => {
