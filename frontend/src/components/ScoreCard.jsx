@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import TypeBadge from './TypeBadge';
 
 const GENDER = {
@@ -6,10 +7,50 @@ const GENDER = {
 };
 
 const STATS = [
-  { key: 'kills', label: 'Kills', pts: '×1' },
-  { key: 'assists', label: 'Asist', pts: '×0.5' },
-  { key: 'mvps', label: 'MVP', pts: '×3' },
+  { key: 'kills', label: 'Kills', pts: '×1', bulk: true },
+  { key: 'assists', label: 'Asist', pts: '×0.5', bulk: true },
+  { key: 'mvps', label: 'MVP', pts: '×3', bulk: false },
 ];
+
+function StatRow({ s, p, readOnly, onStat }) {
+  const [qty, setQty] = useState(1);
+  const n = Math.max(1, parseInt(qty, 10) || 1);
+
+  const apply = (sign) => {
+    onStat(p, s.key, sign * n);
+    setQty(1);
+  };
+
+  return (
+    <div className="score-row">
+      <span className="muted">{s.label} <small>{s.pts}</small></span>
+      <div className="counter-box">
+        {s.bulk && !readOnly && (
+          <input
+            type="number"
+            min="1"
+            className="qty-input"
+            title="Cantidad a sumar o restar"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            onFocus={(e) => e.target.select()}
+          />
+        )}
+        <button
+          className="counter-btn"
+          disabled={readOnly || p.is_dead || p[s.key] === 0}
+          onClick={() => apply(-1)}
+        >−</button>
+        <strong>{p[s.key]}</strong>
+        <button
+          className="counter-btn plus"
+          disabled={readOnly || p.is_dead}
+          onClick={() => apply(1)}
+        >+</button>
+      </div>
+    </div>
+  );
+}
 
 export default function ScoreCard({ p, onStat, onEdit, onDead, onEvolve, readOnly }) {
   const gender = GENDER[p.gender];
@@ -35,22 +76,7 @@ export default function ScoreCard({ p, onStat, onEdit, onDead, onEvolve, readOnl
 
         <div className="score-stats">
           {STATS.map((s) => (
-            <div key={s.key} className="score-row">
-              <span className="muted">{s.label} <small>{s.pts}</small></span>
-              <div className="counter-box">
-                <button
-                  className="counter-btn"
-                  disabled={readOnly || p.is_dead || p[s.key] === 0}
-                  onClick={() => onStat(p, s.key, -1)}
-                >−</button>
-                <strong>{p[s.key]}</strong>
-                <button
-                  className="counter-btn plus"
-                  disabled={readOnly || p.is_dead}
-                  onClick={() => onStat(p, s.key, 1)}
-                >+</button>
-              </div>
-            </div>
+            <StatRow key={s.key} s={s} p={p} readOnly={readOnly} onStat={onStat} />
           ))}
         </div>
 

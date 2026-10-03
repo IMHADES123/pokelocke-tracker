@@ -91,10 +91,10 @@ exports.updatePokemon = async (req, res) => {
 };
 // Sumar o restar 1 a kills / assists / mvps
 exports.changeStat = async (req, res) => {
-  const { field, delta } = req.body;
-  if (!STAT_FIELDS.includes(field) || ![1, -1].includes(delta))
+  const { field } = req.body;
+  const delta = Number(req.body.delta);
+  if (!STAT_FIELDS.includes(field) || !Number.isInteger(delta) || delta === 0 || Math.abs(delta) > 1000)
     return res.status(400).json({ error: 'Datos inválidos' });
-  // `field` está en lista blanca, por eso es seguro usarlo en el SQL
   const { rows } = await pool.query(
     `UPDATE score_pokemon SET ${field} = GREATEST(0, ${field} + $1)
      WHERE id = $2 RETURNING *, ${SCORE_SQL}`,
