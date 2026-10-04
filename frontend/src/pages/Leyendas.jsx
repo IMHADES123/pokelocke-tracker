@@ -31,6 +31,7 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
         </h3>
         <p className="muted">
           {l.species.length ? l.species.join(' · ') : 'Sin registros todavía'}
+          {l.auto ? ' · automática' : ''}
         </p>
 
         <div className="score-stats">
@@ -83,8 +84,12 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
         )}
 
         <div className="score-actions">
-          <button className="btn-ghost" onClick={() => onEdit(l)}>Editar</button>
-          <button className="btn-danger" onClick={() => onDelete(l)}>Eliminar</button>
+          <button className="btn-ghost" onClick={() => onEdit(l)}>
+            {l.auto ? 'Añadir extras' : 'Editar'}
+          </button>
+          {!l.auto && (
+            <button className="btn-danger" onClick={() => onDelete(l)}>Restablecer</button>
+          )}
         </div>
       </div>
     </article>
@@ -113,7 +118,8 @@ export default function Leyendas() {
 
   const save = async (form) => {
     try {
-      if (modal.data) await api.updateLegend(modal.data.id, form);
+      // Con id: actualiza la ficha manual. Sin id (automática o nueva): crea/actualiza por nombre
+      if (modal.data?.id) await api.updateLegend(modal.data.id, form);
       else await api.createLegend(form);
       setModal(null);
       setError('');
@@ -122,7 +128,9 @@ export default function Leyendas() {
   };
 
   const remove = async (l) => {
-    if (!window.confirm(`¿Eliminar a la leyenda ${l.nickname}? Los Pokémon con ese nombre no se borran.`)) return;
+    if (!window.confirm(
+      `¿Quitar los extras de ${l.nickname}? Si sus puntos alcanzan, seguirá apareciendo como automática. Los Pokémon no se borran.`
+    )) return;
     try { await api.deleteLegend(l.id); load(); } catch (e) { fail(e); }
   };
 
@@ -134,12 +142,19 @@ export default function Leyendas() {
           <h2>Leyendas</h2>
           <button className="btn-primary" onClick={() => openModal(null)}>+ Nueva leyenda</button>
         </div>
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Aparecen solas los Pokémon con al menos 1 punto, ordenados de mayor a menor.
+        </p>
         {error && <p className="error" style={{ padding: 0 }}>⚠ {error}</p>}
-        {legends.length === 0 && <p className="muted">Aún no hay leyendas.</p>}
+        {legends.length === 0 && (
+          <p className="muted">
+            Todavía ningún Pokémon llega a 1 punto (100 de score, un shiny o un locke ganado).
+          </p>
+        )}
 
         <div className="grid">
           {legends.map((l, i) => (
-            <LegendCard key={l.id} l={l} rank={i + 1} onEdit={openModal} onDelete={remove} />
+            <LegendCard key={l.key} l={l} rank={i + 1} onEdit={openModal} onDelete={remove} />
           ))}
         </div>
       </main>

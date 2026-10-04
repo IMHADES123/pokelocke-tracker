@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 
+const MIN_POINTS = 1; // puntos mínimos para ser leyenda automática
+
 const key = (s) => (s || '').trim().toLowerCase();
 
 exports.getLegends = async (req, res) => {
@@ -19,15 +21,24 @@ exports.getLegends = async (req, res) => {
       ORDER BY c.id`),
   ]);
 
-  const result = lg.rows.map((g) => {
-    const k = key(g.nickname);
-    const runs = pk.rows.filter((p) => key(p.nickname) === k);
-    const halls = ch.rows
-      .filter((c) => key(c.nickname) === k)
-      .map((c) => ({
-        ...c,
-        points: c.locke_status === 'ganado' && c.pos <= 6 ? 7 - c.pos : 0,
-      }));
+  // Agrupar por nombre (sin distinguir mayúsculas)
+  const groups = new Map();
+  const bucket = (name) => {
+    const k = key(name);
+    if (!groups.has(k)) groups.set(k, { k, name: name.trim(), runs: [], halls: [], manual: null });
+    return groups.get(k);
+  };
+  pk.rows.forEach((p) => bucket(p.nickname).runs.push(p));
+  ch.rows.forEach((c) => bucket(c.nickname).halls.push(c));
+  lg.rows.forEach((m) => { const g = bucket(m.nickname); g.manual = m; g.name = m.nickname; });
+
+  const result = [];
+  for (const g of groups.values()) {
+    const halls = g.halls.map((c) => ({
+      ...c,
+      points: c.locke_status === 'ganado' && c.pos <= 6 ? 7 - c.pos : 0,
+    }));
+    const runs = g.runs;
 
     const total_score = runs.reduce((a, r) => a + r.score, 0);
     const score_points = Math.floor(total_score / 100);
@@ -37,20 +48,27 @@ exports.getLegends = async (req, res) => {
       [...runs, ...halls].filter((x) => x.shiny).map((x) => x.locke_id)
     );
     const shiny_count = shinyLockes.size;
-    const shiny = shiny_count > 0;
     const shiny_points = shiny_count * 2;
 
     const win_points = halls.reduce((a, h) => a + h.points, 0);
-    const extra = Number(g.extra_points) || 0;
-    const latest = runs[runs.length - 1] || halls[halls.length - 1];
+    const extra = Number(g.manual?.extra_points) || 0;
+    const total = score_points + shiny_points + win_points + extra;
 
-    return {
-      ...g,
+    // Califica automáticamente, o existe una ficha manual
+    if (total < MIN_POINTS && !g.manual) continue;
+
+    const latest = runs[runs.length - 1] || halls[halls.length - 1];
+    result.push({
+      id: g.manual?.id ?? null,
+      key: g.k,
+      auto: !g.manual,
+      nickname: g.name,
       extra_points: extra,
-      image_url: g.image_url || latest?.image_url || null,
-      gender: g.gender || latest?.gender || null,
+      extra_notes: g.manual?.extra_notes || null,
+      image_url: g.manual?.image_url || latest?.image_url || null,
+      gender: g.manual?.gender || latest?.gender || null,
       species: [...new Set([...runs, ...halls].map((x) => x.species))],
-      shiny,
+      shiny: shiny_count > 0,
       shiny_count,
       runs,
       halls,
@@ -58,11 +76,12 @@ exports.getLegends = async (req, res) => {
       score_points,
       shiny_points,
       win_points,
-      total: score_points + shiny_points + win_points + extra,
-    };
-  });
+      total,
+    });
+  }
 
-  res.json(result.sort((a, b) => b.total - a.total));
+  result.sort((a, b) => b.total - a.total || b.total_score - a.total_score);
+  res.json(result);
 };
 
 // Nombres ya usados en bitácoras y halls (sugerencias para el formulario)
@@ -83,23 +102,20 @@ const values = (b) => [
   b.extra_notes || null,
 ];
 
-const dupError = (res, err) => {
-  if (err.code === '23505')
-    return res.status(409).json({ error: 'Ya existe una leyenda con ese nombre' });
-  throw err;
-};
-
+// Crea la ficha manual, o la actualiza si ya existe ese nombre
 exports.createLegend = async (req, res) => {
   if (!req.body.nickname?.trim())
     return res.status(400).json({ error: 'El nombre es requerido' });
-  try {
-    const { rows } = await pool.query(
-      `INSERT INTO legends (nickname, gender, image_url, extra_points, extra_notes)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      values(req.body)
-    );
-    res.status(201).json(rows[0]);
-  } catch (err) { dupError(res, err); }
+  const { rows } = await pool.query(
+    `INSERT INTO legends (nickname, gender, image_url, extra_points, extra_notes)
+     VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (lower(nickname)) DO UPDATE
+       SET gender = EXCLUDED.gender, image_url = EXCLUDED.image_url,
+           extra_points = EXCLUDED.extra_points, extra_notes = EXCLUDED.extra_notes
+     RETURNING *`,
+    values(req.body)
+  );
+  res.status(201).json(rows[0]);
 };
 
 exports.updateLegend = async (req, res) => {
@@ -113,7 +129,11 @@ exports.updateLegend = async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'No encontrada' });
     res.json(rows[0]);
-  } catch (err) { dupError(res, err); }
+  } catch (err) {
+    if (err.code === '23505')
+      return res.status(409).json({ error: 'Ya existe una leyenda con ese nombre' });
+    throw err;
+  }
 };
 
 exports.deleteLegend = async (req, res) => {
