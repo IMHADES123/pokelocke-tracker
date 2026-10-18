@@ -9,6 +9,8 @@ const GENDER = {
   F: { symbol: '♀', color: '#ff5fa2' },
 };
 
+const cap = (s) => (s || '').charAt(0).toUpperCase() + (s || '').slice(1);
+
 function LegendCard({ l, rank, onEdit, onDelete }) {
   const [detail, setDetail] = useState(false);
   const g = GENDER[l.gender];
@@ -30,7 +32,8 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
           )}
         </h3>
         <p className="muted">
-          {l.species.length ? l.species.join(' · ') : 'Sin registros todavía'}
+          {l.trainer} · Línea {cap(l.evo_line)}
+          {l.species.length ? ` (${l.species.join(', ')})` : ''}
           {l.auto ? ' · automática' : ''}
         </p>
 
@@ -39,6 +42,7 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
             <span className="muted">Score acumulado ({l.total_score})</span>
             <strong>+{l.score_points}</strong>
           </div>
+          <p className="muted legend-note">Faltan {l.next_in} de score para el siguiente punto</p>
           <div className="score-row">
             <span className="muted">Shiny ({l.shiny_count}×)</span>
             <strong>+{l.shiny_points}</strong>
@@ -98,7 +102,7 @@ function LegendCard({ l, rank, onEdit, onDelete }) {
 
 export default function Leyendas() {
   const [legends, setLegends] = useState([]);
-  const [names, setNames] = useState([]);
+  const [sources, setSources] = useState({ entries: [], trainers: [] });
   const [modal, setModal] = useState(null); // { data: null | legend }
   const [error, setError] = useState('');
 
@@ -109,8 +113,7 @@ export default function Leyendas() {
 
   const openModal = async (data) => {
     try {
-      const s = await api.getLegendSources();
-      setNames(s.names);
+      setSources(await api.getLegendSources());
       setError('');
       setModal({ data });
     } catch (e) { fail(e); }
@@ -118,7 +121,7 @@ export default function Leyendas() {
 
   const save = async (form) => {
     try {
-      // Con id: actualiza la ficha manual. Sin id (automática o nueva): crea/actualiza por nombre
+      // Con id: actualiza la ficha manual. Sin id: crea (o actualiza por clave)
       if (modal.data?.id) await api.updateLegend(modal.data.id, form);
       else await api.createLegend(form);
       setModal(null);
@@ -143,7 +146,8 @@ export default function Leyendas() {
           <button className="btn-primary" onClick={() => openModal(null)}>+ Nueva leyenda</button>
         </div>
         <p className="muted" style={{ marginBottom: 16 }}>
-          Aparecen solas los Pokémon con al menos 1 punto, ordenados de mayor a menor.
+          Una leyenda es única por entrenador, línea evolutiva y nombre. Aparecen solas con
+          al menos 1 punto, de mayor a menor.
         </p>
         {error && <p className="error" style={{ padding: 0 }}>⚠ {error}</p>}
         {legends.length === 0 && (
@@ -163,7 +167,7 @@ export default function Leyendas() {
         <Modal title={modal.data ? 'Editar leyenda' : 'Nueva leyenda'} onClose={() => setModal(null)}>
           <LegendForm
             initial={modal.data}
-            names={names}
+            sources={sources}
             onSave={save}
             onCancel={() => setModal(null)}
           />

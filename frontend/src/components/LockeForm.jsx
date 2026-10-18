@@ -4,6 +4,7 @@ export default function LockeForm({ initial, lockeTypes, onSave, onCancel }) {
   const [f, setF] = useState({
     name: initial?.name || '',
     locke_type_id: initial?.locke_type_id || lockeTypes[0]?.id || '',
+    trainer: initial?.trainer || 'Hades',
     game: initial?.game || '',
     status: initial?.status || 'en_curso',
     difficulty: initial?.difficulty || 'Estándar',
@@ -28,6 +29,12 @@ export default function LockeForm({ initial, lockeTypes, onSave, onCancel }) {
             {lockeTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
+        <label>Entrenador
+          <input value={f.trainer} onChange={set('trainer')} required placeholder="Tu nombre o el de tu novia" />
+        </label>
+      </div>
+
+      <div className="form-row">
         <label>Estado
           <select value={f.status} onChange={set('status')}>
             <option value="en_curso">En curso</option>
@@ -35,20 +42,19 @@ export default function LockeForm({ initial, lockeTypes, onSave, onCancel }) {
             <option value="perdido">Perdido</option>
           </select>
         </label>
-      </div>
-
-      <div className="form-row">
         <label>Juego
           <input value={f.game} onChange={set('game')} placeholder="Platinum" />
         </label>
+      </div>
+
+      <div className="form-row">
         <label>Dificultad
           <input value={f.difficulty} onChange={set('difficulty')} />
         </label>
+        <label>Reglas activas
+          <input value={f.rules} onChange={set('rules')} placeholder="3 Reglas Básicas" />
+        </label>
       </div>
-
-      <label>Reglas activas
-        <input value={f.rules} onChange={set('rules')} placeholder="3 Reglas Básicas" />
-      </label>
 
       <div className="form-actions">
         <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>

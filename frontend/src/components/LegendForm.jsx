@@ -1,14 +1,31 @@
 import { useState } from 'react';
 
-export default function LegendForm({ initial, names, onSave, onCancel }) {
+export default function LegendForm({ initial, sources, onSave, onCancel }) {
+  const locked = Boolean(initial); // la clave no se edita en una leyenda existente
   const [f, setF] = useState({
     nickname: initial?.nickname || '',
+    trainer: initial?.trainer || sources.trainers[0] || 'Yo',
+    species: Array.isArray(initial?.species) ? initial.species[0] || '' : initial?.species || '',
+    evo_line: initial?.evo_line || '',
     gender: initial?.gender || '',
     image_url: initial?.image_url || '',
     extra_points: initial?.extra_points ?? 0,
     extra_notes: initial?.extra_notes || '',
   });
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+
+  // Elegir un registro existente rellena nombre, entrenador y especie
+  const pick = (e) => {
+    const entry = sources.entries[Number(e.target.value)];
+    if (!entry) return;
+    setF((p) => ({
+      ...p,
+      nickname: entry.nickname,
+      trainer: entry.trainer,
+      species: entry.species,
+      evo_line: entry.evo_line,
+    }));
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -17,15 +34,39 @@ export default function LegendForm({ initial, names, onSave, onCancel }) {
 
   return (
     <form className="form" onSubmit={submit}>
-      <label>Nombre de la leyenda (único)
-        <input list="legend-names" value={f.nickname} onChange={set('nickname')}
-          required placeholder="Fern" />
-        <datalist id="legend-names">
-          {names.map((n) => <option key={n} value={n} />)}
-        </datalist>
+      {!locked && (
+        <label>Elegir un Pokémon ya registrado
+          <select defaultValue="" onChange={pick}>
+            <option value="">— Escribirlo a mano —</option>
+            {sources.entries.map((s, i) => (
+              <option key={i} value={i}>
+                {s.nickname} ({s.species}) · {s.trainer}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <div className="form-row">
+        <label>Nombre
+          <input value={f.nickname} onChange={set('nickname')} required disabled={locked} />
+        </label>
+        <label>Entrenador
+          <input list="trainer-names" value={f.trainer} onChange={set('trainer')}
+            required disabled={locked} />
+          <datalist id="trainer-names">
+            {sources.trainers.map((t) => <option key={t} value={t} />)}
+          </datalist>
+        </label>
+      </div>
+
+      <label>Pokémon (en inglés; basta cualquier etapa de la línea)
+        <input value={f.species} onChange={set('species')} required disabled={locked}
+          placeholder="Venusaur" />
       </label>
       <p className="form-msg">
-        Todos los Pokémon de bitácoras y halls con este nombre cuentan para esta leyenda.
+        La leyenda es única por entrenador, línea evolutiva y nombre. Solo cuentan los
+        Pokémon que coincidan en los tres.
       </p>
 
       <div className="form-row">

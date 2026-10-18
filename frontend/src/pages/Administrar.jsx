@@ -99,7 +99,9 @@ export default function Administrar() {
                 <div className="admin-item-row">
                   <div>
                     <strong>{l.name}</strong>
-                    <p className="muted">{l.locke_type} · {STATUS_LABEL[l.status]}</p>
+                    <p className="muted">
+                      {l.locke_type} · {STATUS_LABEL[l.status]} · Entrenador: {l.trainer}
+                    </p>
                   </div>
                   <div className="admin-actions">
                     <button className="btn-ghost" onClick={() => setLockeModal({ data: l })}>Editar</button>
@@ -111,7 +113,7 @@ export default function Administrar() {
                 </div>
 
                 {/* Desplegable de campeones */}
-                {isOpen && (
+                {isOpen && selected && (
                   <div className="admin-panel">
                     <div className="admin-panel-head">
                       <span className="muted">
@@ -133,7 +135,9 @@ export default function Administrar() {
                     {selected.champions.map((c) => (
                       <div key={c.id} className="admin-item">
                         <div className="admin-champ">
-                          {c.image_url && <img src={c.image_url} alt={c.species} loading="lazy" />}
+                          {c.image_url && (
+                            <img src={c.image_url} alt={c.species} loading="lazy" />
+                          )}
                           <div>
                             <strong>{c.nickname}</strong>
                             <p className="muted">{c.species}</p>

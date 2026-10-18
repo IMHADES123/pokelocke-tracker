@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { evoLine } = require('../utils/evoLine');
 
 // Lista de lockes
 exports.getLockes = async (req, res) => {
@@ -36,89 +37,6 @@ exports.getLockeById = async (req, res) => {
   res.json({ ...locke.rows[0], champions: champions.rows });
 };
 
-exports.createLocke = async (req, res) => {
-  const { name, locke_type_id, game, status, difficulty, rules } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
-  const { rows } = await pool.query(
-    `INSERT INTO lockes (name, locke_type_id, game, status, difficulty, rules)
-     VALUES ($1,$2,$3,COALESCE($4,'en_curso'),COALESCE($5,'Estándar'),$6) RETURNING *`,
-    [name, locke_type_id, game, status, difficulty, rules]
-  );
-  res.status(201).json(rows[0]);
-};
-
-exports.updateStatus = async (req, res) => {
-  const { status } = req.body; // ganado | perdido | en_curso
-  const { rows } = await pool.query(
-    'UPDATE lockes SET status=$1 WHERE id=$2 RETURNING *',
-    [status, req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
-  res.json(rows[0]);
-};
-
-exports.deleteLocke = async (req, res) => {
-  await pool.query('DELETE FROM lockes WHERE id=$1', [req.params.id]);
-  res.status(204).end();
-};
-
-// Añadir un Pokémon campeón a un locke
-exports.addChampion = async (req, res) => {
-  const {
-    nickname, species, gender, image_url, type1_id, type2_id,
-    ability, ability_description, nature_id, summary, shiny,
-  } = req.body;
-  if (!nickname || !species || !type1_id)
-    return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
-
-  const { rows } = await pool.query(
-    `INSERT INTO champions
-     (locke_id, nickname, species, gender, image_url, type1_id, type2_id,
-      ability, ability_description, nature_id, summary, shiny)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-    [req.params.id, nickname, species, gender, image_url, type1_id, type2_id || null,
-     ability, ability_description, nature_id, summary, !!shiny]
-  );
-  res.status(201).json(rows[0]);
-};
-
-exports.deleteChampion = async (req, res) => {
-  await pool.query('DELETE FROM champions WHERE id=$1', [req.params.championId]);
-  res.status(204).end();
-};
-exports.updateLocke = async (req, res) => {
-  const { name, locke_type_id, game, status, difficulty, rules } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
-  const { rows } = await pool.query(
-    `UPDATE lockes
-     SET name=$1, locke_type_id=$2, game=$3, status=$4, difficulty=$5, rules=$6
-     WHERE id=$7 RETURNING *`,
-    [name, locke_type_id, game, status, difficulty, rules, req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
-  res.json(rows[0]);
-};
-
-exports.updateChampion = async (req, res) => {
-  const {
-    nickname, species, gender, image_url, type1_id, type2_id,
-    ability, ability_description, nature_id, summary, shiny,
-  } = req.body;
-  if (!nickname || !species || !type1_id)
-    return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
-
-  const { rows } = await pool.query(
-    `UPDATE champions
-     SET nickname=$1, species=$2, gender=$3, image_url=$4, type1_id=$5, type2_id=$6,
-         ability=$7, ability_description=$8, nature_id=$9, summary=$10, shiny=$11
-     WHERE id=$12 AND locke_id=$13 RETURNING *`,
-    [nickname, species, gender, image_url, type1_id, type2_id || null,
-     ability, ability_description, nature_id || null, summary, !!shiny,
-     req.params.championId, req.params.id]
-  );
-  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
-  res.json(rows[0]);
-};
 // Todos los lockes (opcionalmente de un tipo) con sus campeones, en 2 consultas
 exports.getLockesFull = async (req, res) => {
   const typeId = req.query.type_id ? Number(req.query.type_id) : null;
@@ -149,4 +67,92 @@ exports.getLockesFull = async (req, res) => {
     ...l,
     champions: champs.rows.filter((c) => c.locke_id === l.id),
   })));
+};
+
+exports.createLocke = async (req, res) => {
+  const { name, locke_type_id, game, status, difficulty, rules, trainer } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+  const { rows } = await pool.query(
+    `INSERT INTO lockes (name, locke_type_id, game, status, difficulty, rules, trainer)
+     VALUES ($1,$2,$3,COALESCE($4,'en_curso'),COALESCE($5,'Estándar'),$6,$7) RETURNING *`,
+    [name, locke_type_id, game, status, difficulty, rules, (trainer || '').trim() || 'Hades']
+  );
+  res.status(201).json(rows[0]);
+};
+
+exports.updateLocke = async (req, res) => {
+  const { name, locke_type_id, game, status, difficulty, rules, trainer } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+  const { rows } = await pool.query(
+    `UPDATE lockes
+     SET name=$1, locke_type_id=$2, game=$3, status=$4, difficulty=$5, rules=$6, trainer=$7
+     WHERE id=$8 RETURNING *`,
+    [name, locke_type_id, game, status, difficulty, rules,
+     (trainer || '').trim() || 'Hades', req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+  res.json(rows[0]);
+};
+
+exports.updateStatus = async (req, res) => {
+  const { status } = req.body; // ganado | perdido | en_curso
+  const { rows } = await pool.query(
+    'UPDATE lockes SET status=$1 WHERE id=$2 RETURNING *',
+    [status, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+  res.json(rows[0]);
+};
+
+exports.deleteLocke = async (req, res) => {
+  await pool.query('DELETE FROM lockes WHERE id=$1', [req.params.id]);
+  res.status(204).end();
+};
+
+// ---------- Campeones ----------
+exports.addChampion = async (req, res) => {
+  const {
+    nickname, species, gender, image_url, type1_id, type2_id,
+    ability, ability_description, nature_id, summary, shiny,
+  } = req.body;
+  if (!nickname || !species || !type1_id)
+    return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
+  const line = await evoLine(species);
+
+  const { rows } = await pool.query(
+    `INSERT INTO champions
+     (locke_id, nickname, species, evo_line, gender, image_url, type1_id, type2_id,
+      ability, ability_description, nature_id, summary, shiny)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+    [req.params.id, nickname.trim(), species, line, gender, image_url, type1_id, type2_id || null,
+     ability, ability_description, nature_id || null, summary, !!shiny]
+  );
+  res.status(201).json(rows[0]);
+};
+
+exports.updateChampion = async (req, res) => {
+  const {
+    nickname, species, gender, image_url, type1_id, type2_id,
+    ability, ability_description, nature_id, summary, shiny,
+  } = req.body;
+  if (!nickname || !species || !type1_id)
+    return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
+  const line = await evoLine(species);
+
+  const { rows } = await pool.query(
+    `UPDATE champions
+     SET nickname=$1, species=$2, evo_line=$3, gender=$4, image_url=$5, type1_id=$6, type2_id=$7,
+         ability=$8, ability_description=$9, nature_id=$10, summary=$11, shiny=$12
+     WHERE id=$13 AND locke_id=$14 RETURNING *`,
+    [nickname.trim(), species, line, gender, image_url, type1_id, type2_id || null,
+     ability, ability_description, nature_id || null, summary, !!shiny,
+     req.params.championId, req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
+  res.json(rows[0]);
+};
+
+exports.deleteChampion = async (req, res) => {
+  await pool.query('DELETE FROM champions WHERE id=$1', [req.params.championId]);
+  res.status(204).end();
 };

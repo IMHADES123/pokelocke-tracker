@@ -14,7 +14,9 @@ export default function LockeHeader({ locke, open, onToggle }) {
         <h1>
           {locke.name} <span className={`status ${status.cls}`}>{status.label}</span>
         </h1>
-        <p className="muted">{total} Pokémon Campeones</p>
+        <p className="muted">
+          {total} Pokémon Campeones · Entrenador: {locke.trainer}
+        </p>
       </div>
 
       <div className="locke-right">

@@ -47,7 +47,7 @@ export default function Historial() {
                   <div>
                     <strong>{l.name}</strong>
                     <p className="muted">
-                      Locke: {l.locke_name} ·{' '}
+                      Locke: {l.locke_name} · Entrenador: {l.trainer} ·{' '}
                       {l.locke_status === 'ganado' ? 'Ganado' : 'Perdido'} ·{' '}
                       {l.total - l.dead} vivos · {l.dead} muertos
                     </p>

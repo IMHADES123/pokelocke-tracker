@@ -92,9 +92,13 @@ export default function Bitacoras() {
       if (pokeModal.data) await api.updateScorePokemon(pokeModal.data.id, form);
       else await api.addScorePokemon(openLog.id, form);
       setPokeModal(null);
+      setError('');
       loadLog(openLog.id);
       loadLogs();
-    } catch (e) { fail(e); }
+    } catch (e) {
+      fail(e);
+      window.alert(e.message); // por ejemplo: "Ya existe ... en esta bitácora"
+    }
   };
 
   const saveEvolution = async (data) => {
@@ -165,7 +169,7 @@ export default function Bitacoras() {
                   <div>
                     <strong>{l.name}</strong>
                     <p className="muted">
-                      Locke: {l.locke_name} · En curso ·{' '}
+                      Locke: {l.locke_name} · Entrenador: {l.trainer} · En curso ·{' '}
                       {l.total - l.dead} vivos · {l.dead} muertos
                     </p>
                   </div>
