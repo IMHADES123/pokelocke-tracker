@@ -68,3 +68,5 @@ export const updateLegend = (id, data) => request(`/legends/${id}`, json('PUT', 
 export const deleteLegend = (id) => request(`/legends/${id}`, { method: 'DELETE' });
 export const evolveScorePokemon = (id, data) =>
   request(`/scores/pokemon/${id}/evolve`, json('PATCH', data));
+export const setLockeStatus = (id, status) =>
+  request(`/lockes/${id}/status`, json('PATCH', { status }));

@@ -63,6 +63,19 @@ export default function Bitacoras() {
     } catch (e) { fail(e); }
   };
 
+  const finishLocke = async (l, status) => {
+  const msg = status === 'ganado'
+    ? `¿Marcar "${l.locke_name}" como GANADO? La bitácora pasará al Historial.`
+    : `¿Marcar "${l.locke_name}" como PERDIDO? La bitácora pasará al Historial.`;
+  if (!window.confirm(msg)) return;
+  try {
+    await api.setLockeStatus(l.locke_id, status);
+    if (openLog?.id === l.id) setOpenLog(null);
+    setError('');
+    loadLogs();
+  } catch (e) { fail(e); }
+};
+
   // ---- Pokémon ----
   const merge = (updated) =>
     setOpenLog((log) => ({
@@ -174,11 +187,13 @@ export default function Bitacoras() {
                     </p>
                   </div>
                   <div className="admin-actions">
-                    <button className="btn-danger" onClick={() => removeLog(l)}>Eliminar</button>
-                    <button className="toggle-btn" onClick={() => toggle(l.id)}>
-                      Pokémon {isOpen ? '▲' : '▼'}
-                    </button>
-                  </div>
+  <button className="btn-revive" onClick={() => finishLocke(l, 'ganado')}>🏆 Se ganó</button>
+  <button className="btn-danger" onClick={() => finishLocke(l, 'perdido')}>💀 Se perdió</button>
+  <button className="btn-danger" onClick={() => removeLog(l)}>Eliminar</button>
+  <button className="toggle-btn" onClick={() => toggle(l.id)}>
+    Pokémon {isOpen ? '▲' : '▼'}
+  </button>
+</div>
                 </div>
 
                 {isOpen && openLog && (
