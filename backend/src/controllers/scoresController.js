@@ -12,7 +12,8 @@ const dupMsg = (nickname, line) =>
 // ---------- Bitácoras ----------
 exports.getLogs = async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status, l.series_id,
+    SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status, l.series_id,SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status,
+  l.series_id, l.start_lives,
       (SELECT COUNT(*) FROM score_pokemon p WHERE p.log_id = s.id)::int AS total,
       (SELECT COUNT(*) FROM score_pokemon p WHERE p.log_id = s.id AND p.is_dead)::int AS dead
     FROM score_logs s

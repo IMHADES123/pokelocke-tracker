@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+const norm = (s) => (s || '').trim().toLowerCase();
+
 export default function LockeForm({ initial, lockeTypes, series = [], onSave, onCancel }) {
   const [f, setF] = useState({
     name: initial?.name || '',
@@ -10,25 +12,41 @@ export default function LockeForm({ initial, lockeTypes, series = [], onSave, on
     difficulty: initial?.difficulty || 'Estándar',
     rules: initial?.rules || '',
     series_id: initial?.series_id || '',
+    start_lives: initial?.start_lives || '',
   });
   const [ns, setNs] = useState({ name: '', start_lives: 50 });
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
 
-  const type = lockeTypes.find((t) => t.id === Number(f.locke_type_id));
-  const usesLives = Boolean(type?.uses_lives);
+  const typeName = norm(lockeTypes.find((t) => t.id === Number(f.locke_type_id))?.name);
+  const isMega = typeName === 'megalocke';
+  const isHard = typeName === 'hardlocke';
+  const isRandom = typeName === 'randomlocke';
+  const presets = isHard ? [10, 15, 20] : [10, 15, 20, 25];
+
   const options = series.filter(
     (s) =>
       s.locke_type_id === Number(f.locke_type_id) &&
-      s.trainer.trim().toLowerCase() === f.trainer.trim().toLowerCase()
+      norm(s.trainer) === norm(f.trainer)
   );
 
   const submit = (e) => {
     e.preventDefault();
-    const data = { ...f, locke_type_id: Number(f.locke_type_id), series_id: null };
-    if (usesLives && f.series_id === 'new') {
-      data.new_series = { name: ns.name.trim(), start_lives: Number(ns.start_lives) || 50 };
-    } else if (usesLives && options.some((s) => String(s.id) === String(f.series_id))) {
-      data.series_id = Number(f.series_id);
+    const data = {
+      ...f,
+      locke_type_id: Number(f.locke_type_id),
+      series_id: null,
+      start_lives: null,
+    };
+    if (isMega) {
+      if (f.series_id === 'new') {
+        data.new_series = { name: ns.name.trim(), start_lives: Number(ns.start_lives) || 50 };
+      } else if (options.some((s) => String(s.id) === String(f.series_id))) {
+        data.series_id = Number(f.series_id);
+      }
+    } else if (isHard || isRandom) {
+      const n = Number(f.start_lives);
+      if (n > 0) data.start_lives = n;
+      else if (isHard) data.start_lives = presets[0]; // Hardlocke siempre lleva vidas
     }
     onSave(data);
   };
@@ -50,7 +68,7 @@ export default function LockeForm({ initial, lockeTypes, series = [], onSave, on
         </label>
       </div>
 
-      {usesLives && (
+      {isMega && (
         <>
           <label>Serie de vidas (los lockes de una misma serie comparten vidas)
             <select value={f.series_id} onChange={set('series_id')}>
@@ -74,6 +92,31 @@ export default function LockeForm({ initial, lockeTypes, series = [], onSave, on
             </div>
           )}
         </>
+      )}
+
+      {(isHard || isRandom) && (
+        <label>
+          Vidas {isRandom ? '(opcional, solo de este locke)' : '(solo de este locke)'}
+          <div className="chips">
+            {isRandom && (
+              <button type="button"
+                className={`chip ${!f.start_lives ? 'on' : ''}`}
+                onClick={() => setF((p) => ({ ...p, start_lives: '' }))}>
+                Sin vidas
+              </button>
+            )}
+            {presets.map((n) => (
+              <button key={n} type="button"
+                className={`chip ${Number(f.start_lives) === n ? 'on' : ''}`}
+                onClick={() => setF((p) => ({ ...p, start_lives: n }))}>
+                {n}
+              </button>
+            ))}
+          </div>
+          <input type="number" min="1" value={f.start_lives}
+            onChange={set('start_lives')}
+            placeholder={isRandom ? 'Otro número (vacío = sin vidas)' : 'Otro número'} />
+        </label>
       )}
 
       <div className="form-row">

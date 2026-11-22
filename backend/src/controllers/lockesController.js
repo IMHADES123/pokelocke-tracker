@@ -73,27 +73,28 @@ exports.getLockesFull = async (req, res) => {
 };
 
 exports.createLocke = async (req, res) => {
-  const { name, locke_type_id, game, status, difficulty, rules, trainer, series_id } = req.body;
+  const { name, locke_type_id, game, status, difficulty, rules, trainer, series_id, start_lives } = req.body;
   if (!name) return res.status(400).json({ error: 'Nombre requerido' });
   const { rows } = await pool.query(
-    `INSERT INTO lockes (name, locke_type_id, game, status, difficulty, rules, trainer, series_id)
-     VALUES ($1,$2,$3,COALESCE($4,'en_curso'),COALESCE($5,'Estándar'),$6,$7,$8) RETURNING *`,
+    `INSERT INTO lockes
+     (name, locke_type_id, game, status, difficulty, rules, trainer, series_id, start_lives)
+     VALUES ($1,$2,$3,COALESCE($4,'en_curso'),COALESCE($5,'Estándar'),$6,$7,$8,$9) RETURNING *`,
     [name, locke_type_id, game, status, difficulty, rules,
-     (trainer || '').trim() || 'Hades', series_id || null]
+     (trainer || '').trim() || 'Hades', series_id || null, start_lives || null]
   );
   res.status(201).json(rows[0]);
 };
 
 exports.updateLocke = async (req, res) => {
-  const { name, locke_type_id, game, status, difficulty, rules, trainer, series_id } = req.body;
+  const { name, locke_type_id, game, status, difficulty, rules, trainer, series_id, start_lives } = req.body;
   if (!name) return res.status(400).json({ error: 'Nombre requerido' });
   const { rows } = await pool.query(
     `UPDATE lockes
      SET name=$1, locke_type_id=$2, game=$3, status=$4, difficulty=$5, rules=$6,
-         trainer=$7, series_id=$8
-     WHERE id=$9 RETURNING *`,
+         trainer=$7, series_id=$8, start_lives=$9
+     WHERE id=$10 RETURNING *`,
     [name, locke_type_id, game, status, difficulty, rules,
-     (trainer || '').trim() || 'Hades', series_id || null, req.params.id]
+     (trainer || '').trim() || 'Hades', series_id || null, start_lives || null, req.params.id]
   );
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
   res.json(rows[0]);

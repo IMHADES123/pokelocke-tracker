@@ -300,3 +300,9 @@ a.btn-add { text-decoration: none; display: inline-block; }
   border-radius: 999px; padding: 3px 10px;
 }
 .lives.out { color: #ef4444; border-color: #ef4444; background: #ef444422; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.chip {
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px; font-size: 13px;
+}
+.chip.on { border-color: var(--red); color: var(--red); font-weight: 700; }
