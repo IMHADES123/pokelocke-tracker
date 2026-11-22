@@ -9,11 +9,15 @@ const SCORE_SQL = '(kills + assists * 0.5 + mvps * 3)::float AS score';
 const dupMsg = (nickname, line) =>
   `Ya existe "${nickname}" (línea de ${line}) en esta bitácora`;
 
+const NO_LINE = {
+  error: 'No pude consultar PokéAPI para la línea evolutiva. Intenta de nuevo en unos segundos.',
+};
+
 // ---------- Bitácoras ----------
 exports.getLogs = async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status, l.series_id,SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status,
-  l.series_id, l.start_lives,
+    SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status,
+      l.series_id, l.start_lives,
       (SELECT COUNT(*) FROM score_pokemon p WHERE p.log_id = s.id)::int AS total,
       (SELECT COUNT(*) FROM score_pokemon p WHERE p.log_id = s.id AND p.is_dead)::int AS dead
     FROM score_logs s
@@ -69,17 +73,22 @@ exports.deleteLog = async (req, res) => {
 
 // ---------- Pokémon de la bitácora ----------
 exports.addPokemon = async (req, res) => {
-  const { nickname, species, gender, image_url, type1_id, type2_id, shiny } = req.body;
+  const { nickname, species, gender, image_url, type1_id, type2_id, shiny,
+          kills, assists, mvps } = req.body;
   if (!nickname || !species)
     return res.status(400).json({ error: 'nickname y species son requeridos' });
   const line = await evoLine(species);
+  if (!line) return res.status(503).json(NO_LINE);
   try {
     const { rows } = await pool.query(
       `INSERT INTO score_pokemon
-       (log_id, nickname, species, evo_line, gender, image_url, type1_id, type2_id, shiny)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+       (log_id, nickname, species, evo_line, gender, image_url, type1_id, type2_id, shiny,
+        kills, assists, mvps)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,GREATEST(0,$10),GREATEST(0,$11),GREATEST(0,$12))
+       RETURNING *, ${SCORE_SQL}`,
       [req.params.id, nickname.trim(), species, line, gender, image_url,
-       type1_id || null, type2_id || null, !!shiny]
+       type1_id || null, type2_id || null, !!shiny,
+       Number(kills) || 0, Number(assists) || 0, Number(mvps) || 0]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -94,6 +103,7 @@ exports.updatePokemon = async (req, res) => {
   if (!nickname || !species)
     return res.status(400).json({ error: 'nickname y species son requeridos' });
   const line = await evoLine(species);
+  if (!line) return res.status(503).json(NO_LINE);
   try {
     const { rows } = await pool.query(
       `UPDATE score_pokemon
