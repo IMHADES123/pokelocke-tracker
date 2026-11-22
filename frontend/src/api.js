@@ -70,3 +70,8 @@ export const evolveScorePokemon = (id, data) =>
   request(`/scores/pokemon/${id}/evolve`, json('PATCH', data));
 export const setLockeStatus = (id, status) =>
   request(`/lockes/${id}/status`, json('PATCH', { status }));
+// Series (vidas compartidas)
+export const getSeries = () => request('/series');
+export const createSeries = (data) => request('/series', json('POST', data));
+export const updateSeries = (id, data) => request(`/series/${id}`, json('PUT', data));
+export const deleteSeries = (id) => request(`/series/${id}`, { method: 'DELETE' });

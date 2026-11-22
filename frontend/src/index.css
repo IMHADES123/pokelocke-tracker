@@ -294,3 +294,9 @@ a.btn-add { text-decoration: none; display: inline-block; }
 }
 .qty-input:focus { outline: none; border-color: var(--red); }
 .score-actions { flex-wrap: wrap; }
+.lives {
+  display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700;
+  color: #ff5f7e; border: 1px solid #ff5f7e66; background: #ff5f7e18;
+  border-radius: 999px; padding: 3px 10px;
+}
+.lives.out { color: #ef4444; border-color: #ef4444; background: #ef444422; }

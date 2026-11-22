@@ -1,3 +1,5 @@
+import LivesBadge from './LivesBadge';
+
 const STATUS = {
   ganado: { label: 'GANADO', cls: 'won' },
   perdido: { label: 'PERDIDO', cls: 'lost' },
@@ -17,6 +19,7 @@ export default function LockeHeader({ locke, open, onToggle }) {
         <p className="muted">
           {total} Pokémon Campeones · Entrenador: {locke.trainer}
         </p>
+        <LivesBadge series={locke.series} />
       </div>
 
       <div className="locke-right">

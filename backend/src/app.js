@@ -19,6 +19,7 @@ app.use('/api/catalogs', require('./routes/catalogs'));
 app.use('/api/lockes', require('./routes/lockes'));
 app.use('/api/scores', require('./routes/scores'));
 app.use('/api/legends', require('./routes/legends'));
+app.use('/api/series', require('./routes/series'));
 
 app.get('/', (req, res) => res.json({ ok: true, message: 'PokéLocke API' }));
 

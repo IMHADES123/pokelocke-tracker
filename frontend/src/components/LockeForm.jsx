@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function LockeForm({ initial, lockeTypes, onSave, onCancel }) {
+export default function LockeForm({ initial, lockeTypes, series = [], onSave, onCancel }) {
   const [f, setF] = useState({
     name: initial?.name || '',
     locke_type_id: initial?.locke_type_id || lockeTypes[0]?.id || '',
@@ -9,12 +9,28 @@ export default function LockeForm({ initial, lockeTypes, onSave, onCancel }) {
     status: initial?.status || 'en_curso',
     difficulty: initial?.difficulty || 'Estándar',
     rules: initial?.rules || '',
+    series_id: initial?.series_id || '',
   });
+  const [ns, setNs] = useState({ name: '', start_lives: 50 });
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+
+  const type = lockeTypes.find((t) => t.id === Number(f.locke_type_id));
+  const usesLives = Boolean(type?.uses_lives);
+  const options = series.filter(
+    (s) =>
+      s.locke_type_id === Number(f.locke_type_id) &&
+      s.trainer.trim().toLowerCase() === f.trainer.trim().toLowerCase()
+  );
 
   const submit = (e) => {
     e.preventDefault();
-    onSave({ ...f, locke_type_id: Number(f.locke_type_id) });
+    const data = { ...f, locke_type_id: Number(f.locke_type_id), series_id: null };
+    if (usesLives && f.series_id === 'new') {
+      data.new_series = { name: ns.name.trim(), start_lives: Number(ns.start_lives) || 50 };
+    } else if (usesLives && options.some((s) => String(s.id) === String(f.series_id))) {
+      data.series_id = Number(f.series_id);
+    }
+    onSave(data);
   };
 
   return (
@@ -33,6 +49,32 @@ export default function LockeForm({ initial, lockeTypes, onSave, onCancel }) {
           <input value={f.trainer} onChange={set('trainer')} required placeholder="Tu nombre o el de tu novia" />
         </label>
       </div>
+
+      {usesLives && (
+        <>
+          <label>Serie de vidas (los lockes de una misma serie comparten vidas)
+            <select value={f.series_id} onChange={set('series_id')}>
+              <option value="">— Sin serie —</option>
+              {options.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.lives} vidas)</option>
+              ))}
+              <option value="new">+ Crear serie nueva</option>
+            </select>
+          </label>
+          {f.series_id === 'new' && (
+            <div className="form-row">
+              <label>Nombre de la serie
+                <input value={ns.name} required placeholder="Megalocke 1"
+                  onChange={(e) => setNs((p) => ({ ...p, name: e.target.value }))} />
+              </label>
+              <label>Vidas iniciales
+                <input type="number" min="1" value={ns.start_lives}
+                  onChange={(e) => setNs((p) => ({ ...p, start_lives: e.target.value }))} />
+              </label>
+            </div>
+          )}
+        </>
+      )}
 
       <div className="form-row">
         <label>Estado

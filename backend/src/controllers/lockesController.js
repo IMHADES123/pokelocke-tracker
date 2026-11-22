@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { evoLine } = require('../utils/evoLine');
+const { withSeries } = require('../utils/series');
 
 // Lista de lockes
 exports.getLockes = async (req, res) => {
@@ -9,7 +10,7 @@ exports.getLockes = async (req, res) => {
     LEFT JOIN locke_types lt ON lt.id = l.locke_type_id
     ORDER BY l.created_at DESC
   `);
-  res.json(rows);
+  res.json(await withSeries(rows));
 };
 
 // Un locke con sus campeones
@@ -34,10 +35,11 @@ exports.getLockeById = async (req, res) => {
     WHERE c.locke_id = $1
     ORDER BY c.id`, [id]);
 
-  res.json({ ...locke.rows[0], champions: champions.rows });
+  const [row] = await withSeries(locke.rows);
+  res.json({ ...row, champions: champions.rows });
 };
 
-// Todos los lockes (opcionalmente de un tipo) con sus campeones, en 2 consultas
+// Todos los lockes (opcionalmente de un tipo) con sus campeones, en pocas consultas
 exports.getLockesFull = async (req, res) => {
   const typeId = req.query.type_id ? Number(req.query.type_id) : null;
 
@@ -63,32 +65,35 @@ exports.getLockesFull = async (req, res) => {
     WHERE c.locke_id = ANY($1::int[])
     ORDER BY c.id`, [ids]);
 
-  res.json(lockes.rows.map((l) => ({
+  const withS = await withSeries(lockes.rows);
+  res.json(withS.map((l) => ({
     ...l,
     champions: champs.rows.filter((c) => c.locke_id === l.id),
   })));
 };
 
 exports.createLocke = async (req, res) => {
-  const { name, locke_type_id, game, status, difficulty, rules, trainer } = req.body;
+  const { name, locke_type_id, game, status, difficulty, rules, trainer, series_id } = req.body;
   if (!name) return res.status(400).json({ error: 'Nombre requerido' });
   const { rows } = await pool.query(
-    `INSERT INTO lockes (name, locke_type_id, game, status, difficulty, rules, trainer)
-     VALUES ($1,$2,$3,COALESCE($4,'en_curso'),COALESCE($5,'Estándar'),$6,$7) RETURNING *`,
-    [name, locke_type_id, game, status, difficulty, rules, (trainer || '').trim() || 'Hades']
+    `INSERT INTO lockes (name, locke_type_id, game, status, difficulty, rules, trainer, series_id)
+     VALUES ($1,$2,$3,COALESCE($4,'en_curso'),COALESCE($5,'Estándar'),$6,$7,$8) RETURNING *`,
+    [name, locke_type_id, game, status, difficulty, rules,
+     (trainer || '').trim() || 'Hades', series_id || null]
   );
   res.status(201).json(rows[0]);
 };
 
 exports.updateLocke = async (req, res) => {
-  const { name, locke_type_id, game, status, difficulty, rules, trainer } = req.body;
+  const { name, locke_type_id, game, status, difficulty, rules, trainer, series_id } = req.body;
   if (!name) return res.status(400).json({ error: 'Nombre requerido' });
   const { rows } = await pool.query(
     `UPDATE lockes
-     SET name=$1, locke_type_id=$2, game=$3, status=$4, difficulty=$5, rules=$6, trainer=$7
-     WHERE id=$8 RETURNING *`,
+     SET name=$1, locke_type_id=$2, game=$3, status=$4, difficulty=$5, rules=$6,
+         trainer=$7, series_id=$8
+     WHERE id=$9 RETURNING *`,
     [name, locke_type_id, game, status, difficulty, rules,
-     (trainer || '').trim() || 'Hades', req.params.id]
+     (trainer || '').trim() || 'Hades', series_id || null, req.params.id]
   );
   if (!rows.length) return res.status(404).json({ error: 'No encontrado' });
   res.json(rows[0]);
@@ -118,6 +123,11 @@ exports.addChampion = async (req, res) => {
   if (!nickname || !species || !type1_id)
     return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
   const line = await evoLine(species);
+  if (!line) {
+    return res.status(503).json({
+      error: 'No pude consultar PokéAPI para la línea evolutiva. Intenta de nuevo en unos segundos.',
+    });
+  }
 
   const { rows } = await pool.query(
     `INSERT INTO champions
@@ -138,6 +148,11 @@ exports.updateChampion = async (req, res) => {
   if (!nickname || !species || !type1_id)
     return res.status(400).json({ error: 'nickname, species y type1_id son requeridos' });
   const line = await evoLine(species);
+  if (!line) {
+    return res.status(503).json({
+      error: 'No pude consultar PokéAPI para la línea evolutiva. Intenta de nuevo en unos segundos.',
+    });
+  }
 
   const { rows } = await pool.query(
     `UPDATE champions

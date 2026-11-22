@@ -4,4 +4,5 @@ export const SECTIONS = [
   { path: '/bitacoras', label: 'Bitácoras de puntuación' },
   { path: '/historial', label: 'Historial de bitácoras' },
   { path: '/leyendas', label: 'Leyendas' },
+  { path: '/series', label: 'Series de vidas' },
 ];

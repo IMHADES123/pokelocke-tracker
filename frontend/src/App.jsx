@@ -6,6 +6,7 @@ import Bitacoras from './pages/Bitacoras';
 import Historial from './pages/Historial';
 import Leyendas from './pages/Leyendas';
 import { getKey, setKey } from './api';
+import Series from './pages/Series';
 
 function Gate({ onOk }) {
   const [value, setValue] = useState('');
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/bitacoras" element={<Bitacoras />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/leyendas" element={<Leyendas />} />
+        <Route path="/series" element={<Series />} />
       </Routes>
       <footer className="footer">
         © 2026 PokéLocke Tracker — Diseñado para entrenadores de élite.

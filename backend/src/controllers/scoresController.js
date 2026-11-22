@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { evoLine } = require('../utils/evoLine');
+const { withSeries } = require('../utils/series');
 
 const MAX_ACTIVE_LOGS = 5;
 const STAT_FIELDS = ['kills', 'assists', 'mvps'];
@@ -11,13 +12,13 @@ const dupMsg = (nickname, line) =>
 // ---------- Bitácoras ----------
 exports.getLogs = async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status,
+    SELECT s.*, l.name AS locke_name, l.trainer, l.status AS locke_status, l.series_id,
       (SELECT COUNT(*) FROM score_pokemon p WHERE p.log_id = s.id)::int AS total,
       (SELECT COUNT(*) FROM score_pokemon p WHERE p.log_id = s.id AND p.is_dead)::int AS dead
     FROM score_logs s
     JOIN lockes l ON l.id = s.locke_id
     ORDER BY s.created_at DESC`);
-  res.json(rows);
+  res.json(await withSeries(rows));
 };
 
 exports.getLog = async (req, res) => {

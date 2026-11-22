@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import LockeForm from '../components/LockeForm';
 import ChampionForm from '../components/ChampionForm';
+import LivesBadge from '../components/LivesBadge';
 
 const STATUS_LABEL = { ganado: 'Ganado', perdido: 'Perdido', en_curso: 'En curso' };
 const MAX_CHAMPIONS = 6;
@@ -13,6 +14,7 @@ export default function Administrar() {
   const [pokemonTypes, setPokemonTypes] = useState([]);
   const [natures, setNatures] = useState([]);
   const [lockes, setLockes] = useState([]);
+  const [series, setSeries] = useState([]);
   const [selected, setSelected] = useState(null); // locke desplegado con sus campeones
   const [lockeModal, setLockeModal] = useState(null);
   const [champModal, setChampModal] = useState(null);
@@ -20,14 +22,16 @@ export default function Administrar() {
 
   const fail = (e) => setError(e.message);
   const loadLockes = () => api.getLockes().then(setLockes).catch(fail);
+  const loadSeries = () => api.getSeries().then(setSeries).catch(fail);
   const loadSelected = (id) => api.getLocke(id).then(setSelected).catch(fail);
 
   useEffect(() => {
     Promise.all([
-      api.getLockeTypes(), api.getPokemonTypes(), api.getNatures(), api.getLockes(),
+      api.getLockeTypes(), api.getPokemonTypes(), api.getNatures(),
+      api.getLockes(), api.getSeries(),
     ])
-      .then(([lt, pt, n, l]) => {
-        setLockeTypes(lt); setPokemonTypes(pt); setNatures(n); setLockes(l);
+      .then(([lt, pt, n, l, s]) => {
+        setLockeTypes(lt); setPokemonTypes(pt); setNatures(n); setLockes(l); setSeries(s);
       })
       .catch(fail);
   }, []);
@@ -41,10 +45,21 @@ export default function Administrar() {
   // ---- Lockes ----
   const saveLocke = async (form) => {
     try {
-      if (lockeModal.data) await api.updateLocke(lockeModal.data.id, form);
-      else await api.createLocke(form);
+      const { new_series, ...data } = form;
+      if (new_series) {
+        const created = await api.createSeries({
+          name: new_series.name,
+          start_lives: new_series.start_lives,
+          trainer: data.trainer,
+          locke_type_id: data.locke_type_id,
+        });
+        data.series_id = created.id;
+      }
+      if (lockeModal.data) await api.updateLocke(lockeModal.data.id, data);
+      else await api.createLocke(data);
       setLockeModal(null);
-      await loadLockes();
+      setError('');
+      await Promise.all([loadLockes(), loadSeries()]);
       if (selected) loadSelected(selected.id);
     } catch (e) { fail(e); }
   };
@@ -55,6 +70,7 @@ export default function Administrar() {
       await api.deleteLocke(l.id);
       if (selected?.id === l.id) setSelected(null);
       loadLockes();
+      loadSeries();
     } catch (e) { fail(e); }
   };
 
@@ -95,13 +111,13 @@ export default function Administrar() {
             const isOpen = selected?.id === l.id;
             return (
               <div key={l.id} className={`admin-block ${isOpen ? 'selected' : ''}`}>
-                {/* Fila del locke */}
                 <div className="admin-item-row">
                   <div>
                     <strong>{l.name}</strong>
                     <p className="muted">
                       {l.locke_type} · {STATUS_LABEL[l.status]} · Entrenador: {l.trainer}
                     </p>
+                    <LivesBadge series={l.series} />
                   </div>
                   <div className="admin-actions">
                     <button className="btn-ghost" onClick={() => setLockeModal({ data: l })}>Editar</button>
@@ -112,7 +128,6 @@ export default function Administrar() {
                   </div>
                 </div>
 
-                {/* Desplegable de campeones */}
                 {isOpen && selected && (
                   <div className="admin-panel">
                     <div className="admin-panel-head">
@@ -165,6 +180,7 @@ export default function Administrar() {
           <LockeForm
             initial={lockeModal.data}
             lockeTypes={lockeTypes}
+            series={series}
             onSave={saveLocke}
             onCancel={() => setLockeModal(null)}
           />

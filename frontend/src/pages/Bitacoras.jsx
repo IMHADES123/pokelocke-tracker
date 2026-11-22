@@ -7,6 +7,7 @@ import ScoreLogForm from '../components/ScoreLogForm';
 import ScorePokemonForm from '../components/ScorePokemonForm';
 import EvolveForm from '../components/EvolveForm';
 import PokemonList from '../components/PokemonList';
+import LivesBadge from '../components/LivesBadge';
 
 const MAX_LOGS = 5;
 
@@ -64,17 +65,17 @@ export default function Bitacoras() {
   };
 
   const finishLocke = async (l, status) => {
-  const msg = status === 'ganado'
-    ? `¿Marcar "${l.locke_name}" como GANADO? La bitácora pasará al Historial.`
-    : `¿Marcar "${l.locke_name}" como PERDIDO? La bitácora pasará al Historial.`;
-  if (!window.confirm(msg)) return;
-  try {
-    await api.setLockeStatus(l.locke_id, status);
-    if (openLog?.id === l.id) setOpenLog(null);
-    setError('');
-    loadLogs();
-  } catch (e) { fail(e); }
-};
+    const msg = status === 'ganado'
+      ? `¿Marcar "${l.locke_name}" como GANADO? La bitácora pasará al Historial.`
+      : `¿Marcar "${l.locke_name}" como PERDIDO? La bitácora pasará al Historial.`;
+    if (!window.confirm(msg)) return;
+    try {
+      await api.setLockeStatus(l.locke_id, status);
+      if (openLog?.id === l.id) setOpenLog(null);
+      setError('');
+      loadLogs();
+    } catch (e) { fail(e); }
+  };
 
   // ---- Pokémon ----
   const merge = (updated) =>
@@ -185,15 +186,16 @@ export default function Bitacoras() {
                       Locke: {l.locke_name} · Entrenador: {l.trainer} · En curso ·{' '}
                       {l.total - l.dead} vivos · {l.dead} muertos
                     </p>
+                    <LivesBadge series={l.series} />
                   </div>
                   <div className="admin-actions">
-  <button className="btn-revive" onClick={() => finishLocke(l, 'ganado')}>🏆 Se ganó</button>
-  <button className="btn-danger" onClick={() => finishLocke(l, 'perdido')}>💀 Se perdió</button>
-  <button className="btn-danger" onClick={() => removeLog(l)}>Eliminar</button>
-  <button className="toggle-btn" onClick={() => toggle(l.id)}>
-    Pokémon {isOpen ? '▲' : '▼'}
-  </button>
-</div>
+                    <button className="btn-revive" onClick={() => finishLocke(l, 'ganado')}>🏆 Se ganó</button>
+                    <button className="btn-danger" onClick={() => finishLocke(l, 'perdido')}>💀 Se perdió</button>
+                    <button className="btn-danger" onClick={() => removeLog(l)}>Eliminar</button>
+                    <button className="toggle-btn" onClick={() => toggle(l.id)}>
+                      Pokémon {isOpen ? '▲' : '▼'}
+                    </button>
+                  </div>
                 </div>
 
                 {isOpen && openLog && (

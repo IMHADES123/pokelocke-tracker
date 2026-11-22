@@ -3,8 +3,9 @@ import * as api from '../api';
 import Navbar from '../components/Navbar';
 import ScoreCard from '../components/ScoreCard';
 import PokemonList from '../components/PokemonList';
+import LivesBadge from '../components/LivesBadge';
 
-const noop = () => {};
+const noop = () => { };
 
 export default function Historial() {
   const [logs, setLogs] = useState([]);
@@ -51,6 +52,7 @@ export default function Historial() {
                       {l.locke_status === 'ganado' ? 'Ganado' : 'Perdido'} ·{' '}
                       {l.total - l.dead} vivos · {l.dead} muertos
                     </p>
+                    <LivesBadge series={l.series} />
                   </div>
                   <button className="toggle-btn" onClick={() => toggle(l.id)}>
                     Pokémon {isOpen ? '▲' : '▼'}
